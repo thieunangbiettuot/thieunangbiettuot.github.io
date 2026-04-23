@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giả Lập Vietlott Mega 6/45 Pro</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: #fff;
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        h1 { text-align: center; color: #d32f2f; margin-top: 0; }
+        h3 { border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; color: #1976d2; margin-top: 25px;}
+        
+        /* Box Tài khoản (Ví) */
+        .wallet-box {
+            background: #e3f2fd; border: 1px solid #90caf9; padding: 15px 20px;
+            border-radius: 8px; display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+        }
+        .balance-title { font-size: 16px; color: #555; }
+        .balance-text { font-size: 26px; color: #1565c0; font-weight: bold; display: inline-block; transition: all 0.3s; }
+        .deposit-group { display: flex; gap: 10px; align-items: center; }
+        .deposit-select { padding: 8px; border-radius: 6px; font-size: 15px; border: 1px solid #ccc; outline: none; }
+        
+        /* Hiệu ứng chớp xanh khi được cộng tiền */
+        @keyframes flashMoney {
+            0% { color: #4caf50; transform: scale(1.1); }
+            100% { color: #1565c0; transform: scale(1); }
+        }
+        .flash { animation: flashMoney 0.6s ease-out; }
+
+        /* Grid số tự chọn */
+        .number-grid {
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 15px;
+        }
+        .ball {
+            width: 38px; height: 38px; border-radius: 50%; background-color: #e0e0e0;
+            display: flex; align-items: center; justify-content: center; font-weight: bold;
+            cursor: pointer; transition: all 0.2s; user-select: none;
+        }
+        .ball:hover { background-color: #bdbdbd; }
+        .ball.selected { background-color: #d32f2f; color: white; box-shadow: 0 2px 5px rgba(211,47,47,0.5); }
+        
+        /* Nút bấm */
+        .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px;}
+        button {
+            padding: 10px 15px; border: none; border-radius: 6px; font-size: 15px;
+            font-weight: bold; cursor: pointer; transition: 0.2s; color: white;
+        }
+        .btn-add { background-color: #f57c00; } .btn-add:hover { background-color: #e65100; }
+        .btn-clear { background-color: #757575; } .btn-clear:hover { background-color: #424242; }
+        .btn-random { background-color: #1976d2; } .btn-random:hover { background-color: #115293; }
+        .btn-deposit { background-color: #4caf50; } .btn-deposit:hover { background-color: #388e3c; }
+        
+        .btn-play { background-color: #d32f2f; width: 100%; font-size: 20px; padding: 15px; margin-top: 20px; text-transform: uppercase; }
+        .btn-play:hover { background-color: #b71c1c; }
+        .btn-play:disabled { background-color: #ef9a9a; cursor: not-allowed; }
+
+        /* Danh sách vé của user */
+        .ticket-list {
+            max-height: 250px; overflow-y: auto; background: #f9f9f9; padding: 10px;
+            border-radius: 8px; border: 1px solid #ddd;
+        }
+        .ticket-row {
+            display: flex; align-items: center; gap: 10px; padding: 8px;
+            border-bottom: 1px dashed #ccc; flex-wrap: wrap;
+        }
+        .ticket-row:last-child { border-bottom: none; }
+        .ticket-id { font-weight: bold; width: 50px; color: #555; }
+        .mini-ball {
+            width: 30px; height: 30px; border-radius: 50%; background-color: #eee;
+            display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;
+        }
+        .mini-ball.match { background-color: #fbc02d; color: #d32f2f; box-shadow: 0 0 5px #fbc02d; transform: scale(1.1); }
+        .ticket-prize { font-weight: bold; color: #d32f2f; margin-left: auto; }
+
+        /* Kết quả quay thưởng (Animation) */
+        #result-section { display: none; background: #fff3e0; padding: 20px; border-radius: 8px; margin-top: 20px; border: 1px solid #ffcc80;}
+        .winning-balls { display: flex; gap: 15px; justify-content: center; margin: 20px 0; height: 60px; }
+        .win-ball {
+            width: 50px; height: 50px; border-radius: 50%; background-color: #d32f2f; color: white;
+            display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold;
+            box-shadow: 0 4px 10px rgba(211,47,47,0.4); opacity: 0; transform: translateY(-20px);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .win-ball.show { opacity: 1; transform: translateY(0); }
+        .win-ball.rolling { animation: shake 0.5s infinite alternate; background-color: #fbc02d; color: #333; }
+
+        @keyframes shake {
+            0% { transform: rotate(-15deg) scale(1.1); }
+            100% { transform: rotate(15deg) scale(1.1); }
+        }
+
+        /* Thống kê */
+        .input-group { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px;}
+        input[type="number"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100px; font-size: 16px; }
+        .stats p { margin: 8px 0; font-size: 16px; }
+        .highlight { font-weight: bold; color: #d32f2f; }
+        #bot-stats, #user-stats { display: none; }
+        
+        #user-stats { background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid #c8e6c9; }
+        .win-list {
+            background: #fff; padding: 10px; border-radius: 5px; border: 1px solid #ddd;
+            max-height: 150px; overflow-y: auto; font-size: 14px; margin-top: 10px;
+        }
+        .win-list ul { margin: 0; padding-left: 20px; }
+        .win-list li { margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Vietlott Mega 6/45 Pro</h1>
+
+    <!-- VÍ TIỀN -->
+    <div class="wallet-box">
+        <div>
+            <div class="balance-title">Số dư tài khoản:</div>
+            <div class="balance-text" id="user-balance">0đ</div>
+        </div>
+        <div class="deposit-group">
+            <select class="deposit-select" id="deposit-amount">
+                <option value="50000">50.000 đ</option>
+                <option value="100000" selected>100.000 đ</option>
+                <option value="500000">500.000 đ</option>
+                <option value="1000000">1.000.000 đ</option>
+                <option value="10000000">10.000.000 đ</option>
+            </select>
+            <button class="btn-deposit" onclick="depositMoney()">💵 Nạp tiền</button>
+        </div>
+    </div>
+    
+    <h3>1. Chọn bộ số (Mỗi vé giá 10.000đ)</h3>
+    <div class="number-grid" id="number-grid"></div>
+    <div style="text-align: center; margin-bottom: 10px;">Đang chọn: <span id="count" class="highlight">0</span>/6 số</div>
+    
+    <div class="btn-group">
+        <button class="btn-clear" onclick="clearSelection()">Xóa chọn</button>
+        <button class="btn-random" onclick="randomizeGrid()">Chọn ngẫu nhiên</button>
+        <button class="btn-add" onclick="addManualTicket()">🛒 Mua vé này</button>
+    </div>
+
+    <div class="input-group" style="margin-top: 15px;">
+        <label>Mua nhanh vé ngẫu nhiên:</label>
+        <div>
+            <input type="number" id="quickRandomCount" value="5" min="1" max="100">
+            <button class="btn-random" onclick="addMultipleRandomTickets()">Mua nhanh</button>
+        </div>
+    </div>
+
+    <h4>Giỏ vé của bạn (<span id="total-tickets">0</span> vé - Đã chi: <span id="total-cost" style="color: #d32f2f;">0đ</span>)
+        <button onclick="clearAllTickets()" style="background: #e53935; padding: 5px 10px; font-size: 12px; float: right;">Xóa & Hoàn tiền</button>
+    </h4>
+    <div class="ticket-list" id="ticket-list">
+        <div style="text-align: center; color: #888; padding: 20px;">Bạn chưa mua vé nào.</div>
+    </div>
+
+    <h3>2. Giả lập người chơi khác</h3>
+    <div class="input-group">
+        <label>Số lượng vé giả lập (Bot) tham gia mua:</label>
+        <input type="number" id="botCount" value="50000" min="0" max="5000000">
+    </div>
+
+    <button class="btn-play" id="btnPlay" onclick="playLottery()">🎉 THANH TOÁN & QUAY SỐ 🎉</button>
+
+    <div id="result-section">
+        <h2 style="text-align: center; color: #d32f2f; margin-top: 0;" id="draw-status">ĐANG QUAY THƯỞNG...</h2>
+        <div class="winning-balls" id="winning-balls"></div>
+
+        <!-- THỐNG KÊ NGƯỜI CHƠI -->
+        <div id="user-stats">
+            <h3 style="margin-top: 0; color: #2e7d32;">Kết Quả Dò Vé</h3>
+            <div id="user-stats-content" class="stats"></div>
+        </div>
+
+        <!-- THỐNG KÊ BOT -->
+        <div id="bot-stats">
+            <h3 style="margin-top: 30px;">Thống kê cộng đồng (<span id="stat-bot-count">0</span> vé giả lập)</h3>
+            <div class="stats" id="bot-stats-content"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const MAX_NUMBERS = 45;
+    const PICK_COUNT = 6;
+    const TICKET_PRICE = 10000; // 10.000đ/vé
+    
+    let gridSelection = new Set();
+    let myTickets =[]; 
+    let isPlaying = false;
+    let isDrawn = false; // Đánh dấu kỳ quay đã diễn ra chưa
+    let userBalance = 0; // Số dư tài khoản
+
+    // --- HỆ THỐNG VÍ TIỀN ---
+    function updateBalanceUI(addFlash = false) {
+        const balEl = document.getElementById('user-balance');
+        balEl.innerText = userBalance.toLocaleString('vi-VN') + "đ";
+        if (addFlash) {
+            balEl.classList.remove('flash');
+            void balEl.offsetWidth; // trigger reflow
+            balEl.classList.add('flash');
+        }
+    }
+
+    function depositMoney() {
+        let amount = parseInt(document.getElementById('deposit-amount').value);
+        userBalance += amount;
+        updateBalanceUI(true);
+        alert(`Nạp thành công ${amount.toLocaleString('vi-VN')}đ vào tài khoản!`);
+    }
+
+    // --- PHẦN 1: TƯƠNG TÁC LƯỚI SỐ VÀ MUA VÉ ---
+    function initGrid() {
+        const grid = document.getElementById('number-grid');
+        grid.innerHTML = '';
+        for (let i = 1; i <= MAX_NUMBERS; i++) {
+            let ball = document.createElement('div');
+            ball.className = 'ball';
+            ball.id = `ball-${i}`;
+            ball.innerText = i;
+            ball.onclick = () => toggleNumber(i);
+            grid.appendChild(ball);
+        }
+        updateBalanceUI();
+    }
+
+    function toggleNumber(num) {
+        if (gridSelection.has(num)) {
+            gridSelection.delete(num);
+            document.getElementById(`ball-${num}`).classList.remove('selected');
+        } else {
+            if (gridSelection.size >= PICK_COUNT) return;
+            gridSelection.add(num);
+            document.getElementById(`ball-${num}`).classList.add('selected');
+        }
+        document.getElementById('count').innerText = gridSelection.size;
+    }
+
+    function clearSelection() {
+        gridSelection.clear();
+        document.querySelectorAll('.ball').forEach(b => b.classList.remove('selected'));
+        document.getElementById('count').innerText = 0;
+    }
+
+    function randomizeGrid() {
+        clearSelection();
+        while (gridSelection.size < PICK_COUNT) {
+            let rand = Math.floor(Math.random() * MAX_NUMBERS) + 1;
+            gridSelection.add(rand);
+            document.getElementById(`ball-${rand}`).classList.add('selected');
+        }
+        document.getElementById('count').innerText = gridSelection.size;
+    }
+
+    function generateSingleRandomTicket() {
+        let ticket = new Set();
+        while (ticket.size < PICK_COUNT) ticket.add(Math.floor(Math.random() * MAX_NUMBERS) + 1);
+        return Array.from(ticket).sort((a, b) => a - b);
+    }
+
+    function checkResetSession() {
+        // Nếu đã quay số xong mà người dùng mua vé mới, tự động reset bàn mới
+        if (isDrawn) {
+            myTickets =[];
+            isDrawn = false;
+            document.getElementById('result-section').style.display = 'none';
+        }
+    }
+
+    function addManualTicket() {
+        if (gridSelection.size !== PICK_COUNT) {
+            alert("Vui lòng chọn đúng 6 số để tạo vé!");
+            return;
+        }
+        if (userBalance < TICKET_PRICE) {
+            alert("Số dư không đủ! Vui lòng nạp thêm tiền để mua vé.");
+            return;
+        }
+
+        checkResetSession();
+        
+        // Trừ tiền và thêm vé
+        userBalance -= TICKET_PRICE;
+        updateBalanceUI();
+
+        let ticket = Array.from(gridSelection).sort((a, b) => a - b);
+        myTickets.push(ticket);
+        clearSelection();
+        renderTickets();
+    }
+
+    function addMultipleRandomTickets() {
+        let count = parseInt(document.getElementById('quickRandomCount').value) || 1;
+        let totalCost = count * TICKET_PRICE;
+        
+        if (userBalance < totalCost) {
+            alert(`Số dư không đủ! Bạn cần ${totalCost.toLocaleString('vi-VN')}đ để mua ${count} vé.`);
+            return;
+        }
+
+        checkResetSession();
+
+        // Trừ tiền và thêm vé
+        userBalance -= totalCost;
+        updateBalanceUI();
+
+        for (let i = 0; i < count; i++) {
+            myTickets.push(generateSingleRandomTicket());
+        }
+        renderTickets();
+    }
+
+    function clearAllTickets() {
+        if (myTickets.length === 0) return;
+        
+        if(confirm("Bạn có chắc muốn hủy giỏ vé? Tiền mua vé chưa quay sẽ được hoàn lại.")) {
+            // Nếu vé chưa được mang đi quay, hoàn tiền lại vào ví
+            if (!isDrawn) {
+                userBalance += myTickets.length * TICKET_PRICE;
+                updateBalanceUI(true);
+            }
+            
+            myTickets =[];
+            isDrawn = false;
+            document.getElementById('result-section').style.display = 'none';
+            renderTickets();
+        }
+    }
+
+    // --- HIỂN THỊ DANH SÁCH VÀ ĐỐI CHIẾU ---
+    function renderTickets(winningSet = null) {
+        const listDiv = document.getElementById('ticket-list');
+        let totalSpent = myTickets.length * TICKET_PRICE;
+        
+        document.getElementById('total-tickets').innerText = myTickets.length;
+        document.getElementById('total-cost').innerText = totalSpent.toLocaleString('vi-VN') + "đ";
+        
+        if (myTickets.length === 0) {
+            listDiv.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">Bạn chưa mua vé nào.</div>';
+            document.getElementById('user-stats').style.display = 'none';
+            return 0; // Trả về tiền thắng = 0
+        }
+
+        listDiv.innerHTML = '';
+        let totalWon = 0;
+        let winTicketCount = 0;
+        let winDetails =[];
+
+        myTickets.forEach((ticket, index) => {
+            let matchCount = 0;
+            let row = document.createElement('div');
+            row.className = 'ticket-row';
+            
+            let idSpan = document.createElement('span');
+            idSpan.className = 'ticket-id';
+            idSpan.innerText = `Vé ${index + 1}:`;
+            row.appendChild(idSpan);
+
+            ticket.forEach(num => {
+                let isMatch = winningSet && winningSet.has(num);
+                if (isMatch) matchCount++;
+                
+                let b = document.createElement('div');
+                b.className = `mini-ball ${isMatch ? 'match' : ''}`;
+                b.innerText = num;
+                row.appendChild(b);
+            });
+
+            // Ghi nhận giải thưởng
+            if (winningSet) {
+                let prizeSpan = document.createElement('span');
+                prizeSpan.className = 'ticket-prize';
+                
+                let prizeMoney = 0;
+                if (matchCount === 6) { prizeMoney = 12000000000; prizeSpan.innerText = "🎉 JACKPOT 🎉"; }
+                else if (matchCount === 5) { prizeMoney = 10000000; prizeSpan.innerText = "10.000.000đ"; }
+                else if (matchCount === 4) { prizeMoney = 300000; prizeSpan.innerText = "300.000đ"; }
+                else if (matchCount === 3) { prizeMoney = 30000; prizeSpan.innerText = "30.000đ"; }
+                else {
+                    prizeSpan.innerText = "Trượt";
+                    prizeSpan.style.color = "#9e9e9e";
+                }
+                
+                if (matchCount >= 3) {
+                    totalWon += prizeMoney;
+                    winTicketCount++;
+                    winDetails.push(`<strong>Vé ${index + 1}</strong> [${ticket.join(', ')}] - Trúng ${matchCount} số: <span style="color:#d32f2f; font-weight:bold">${prizeMoney.toLocaleString('vi-VN')}đ</span>`);
+                }
+                row.appendChild(prizeSpan);
+            }
+            listDiv.appendChild(row);
+        });
+
+        // Bảng Thống Kê Cá Nhân sau khi quay
+        if (winningSet) {
+            let profit = totalWon - totalSpent;
+            let winRate = ((winTicketCount / myTickets.length) * 100).toFixed(2);
+            let profitColor = profit >= 0 ? "#2e7d32" : "#d32f2f";
+            let profitText = profit >= 0 ? "LÃI" : "LỖ";
+
+            let statsHtml = `
+                <p>💸 Tổng tiền mua vé: <strong>${totalSpent.toLocaleString('vi-VN')}đ</strong></p>
+                <p>💰 Tổng tiền trúng thưởng: <strong style="color: #d32f2f;">${totalWon.toLocaleString('vi-VN')}đ</strong></p>
+                <p>📈 Lợi nhuận kỳ này (${profitText}): <strong style="color: ${profitColor}; font-size: 18px;">${Math.abs(profit).toLocaleString('vi-VN')}đ</strong></p>
+                <p>🎯 Tỉ lệ trúng: <strong>${winTicketCount} / ${myTickets.length} vé (${winRate}%)</strong></p>
+            `;
+
+            if (winDetails.length > 0) {
+                statsHtml += `<div class="win-list"><strong>Danh sách vé trúng:</strong><ul>`;
+                winDetails.forEach(detail => statsHtml += `<li>${detail}</li>`);
+                statsHtml += `</ul></div>`;
+            } else {
+                statsHtml += `<p style="color: #757575; font-style: italic; margin-top: 10px;">Rất tiếc, bạn không trúng vé nào trong kỳ quay này.</p>`;
+            }
+
+            document.getElementById('user-stats-content').innerHTML = statsHtml;
+            document.getElementById('user-stats').style.display = 'block';
+            
+            return totalWon; // Trả về số tiền để cộng vào ví
+        } else {
+            listDiv.scrollTop = listDiv.scrollHeight; 
+            return 0;
+        }
+    }
+
+
+    // --- PHẦN 2: LOGIC QUAY SỐ VÀ HIỆU ỨNG ---
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    async function playLottery() {
+        if (myTickets.length === 0) {
+            alert("Giỏ vé trống! Vui lòng chọn số hoặc bấm Mua nhanh.");
+            return;
+        }
+        if (isPlaying) return;
+        
+        isPlaying = true;
+        document.getElementById('btnPlay').disabled = true;
+        document.getElementById('btnPlay').innerText = "ĐANG QUAY SỐ...";
+        
+        renderTickets(); // Reset highlight
+        document.getElementById('result-section').style.display = 'block';
+        document.getElementById('user-stats').style.display = 'none';
+        document.getElementById('bot-stats').style.display = 'none';
+        document.getElementById('draw-status').innerText = "ĐANG QUAY THƯỞNG...";
+        
+        const winContainer = document.getElementById('winning-balls');
+        winContainer.innerHTML = '';
+        document.getElementById('result-section').scrollIntoView({ behavior: "smooth" });
+
+        const winningNumbers = generateSingleRandomTicket();
+        const winningSet = new Set(winningNumbers);
+
+        for (let i = 0; i < PICK_COUNT; i++) {
+            let ball = document.createElement('div');
+            ball.className = 'win-ball rolling show';
+            ball.innerText = "?";
+            winContainer.appendChild(ball);
+            
+            await sleep(1000); 
+            
+            ball.classList.remove('rolling');
+            ball.innerText = winningNumbers[i];
+        }
+
+        document.getElementById('draw-status').innerText = "KẾT QUẢ CHÍNH THỨC";
+
+        // Nhận lại số tiền trúng thưởng và cộng vào tài khoản
+        let totalWonAmount = renderTickets(winningSet);
+        if (totalWonAmount > 0) {
+            userBalance += totalWonAmount;
+            updateBalanceUI(true); // Hiệu ứng chớp xanh lá báo có tiền
+        }
+
+        isDrawn = true; // Đánh dấu kỳ quay đã kết thúc
+
+        // Chạy giả lập vé Bot
+        document.getElementById('draw-status').innerText = "ĐANG TỔNG HỢP VÉ TOÀN QUỐC...";
+        await sleep(500); 
+        runBotSimulation(winningSet);
+
+        isPlaying = false;
+        document.getElementById('btnPlay').disabled = false;
+        document.getElementById('btnPlay').innerText = "🎉 BẮT ĐẦU KỲ QUAY MỚI 🎉";
+        document.getElementById('draw-status').innerText = "KẾT QUẢ CHÍNH THỨC";
+    }
+
+    // --- PHẦN 3: GIẢ LẬP BOT ---
+    function runBotSimulation(winningSet) {
+        const botCount = parseInt(document.getElementById('botCount').value) || 0;
+        if (botCount <= 0) return;
+
+        let botStats = { 3: 0, 4: 0, 5: 0, 6: 0 };
+        let winMap = new Array(MAX_NUMBERS + 1).fill(false);
+        winningSet.forEach(n => winMap[n] = true);
+
+        for (let i = 0; i < botCount; i++) {
+            let matches = 0;
+            let picked = new Set();
+            while (picked.size < PICK_COUNT) {
+                let num = Math.floor(Math.random() * MAX_NUMBERS) + 1;
+                if (!picked.has(num)) {
+                    picked.add(num);
+                    if (winMap[num]) matches++;
+                }
+            }
+            if (matches >= 3) botStats[matches]++;
+        }
+
+        document.getElementById('stat-bot-count').innerText = botCount.toLocaleString('vi-VN');
+        document.getElementById('bot-stats-content').innerHTML = `
+            <p>🎁 Jackpot (Trúng 6 số): <span class="highlight" style="font-size: 20px;">${botStats[6]}</span> vé</p>
+            <p>🥇 Giải Nhất (Trúng 5 số): <span class="highlight">${botStats[5]}</span> vé</p>
+            <p>🥈 Giải Nhì (Trúng 4 số): <span class="highlight">${botStats[4]}</span> vé</p>
+            <p>🥉 Giải Ba (Trúng 3 số): <span class="highlight">${botStats[3]}</span> vé</p>
+        `;
+        document.getElementById('bot-stats').style.display = 'block';
+    }
+
+    window.onload = initGrid;
+</script>
+
+</body>
+</html>
